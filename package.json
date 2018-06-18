@@ -1,0 +1,14 @@
+{
+  "name": "viola-style-loader",
+  "version": "1.0.0",
+  "description": "load style",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "ronk zeng",
+  "license": "ISC",
+  "dependencies": {
+    "css": "^2.2.3"
+  }
+}
