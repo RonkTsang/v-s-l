@@ -1,22 +1,31 @@
 var _c = require('consoler')
 var css = require('css')
 
-var {
+import {
   isDef, isUnDef
-} = require('./lib/util')
+} from './lib/util'
 
-var StyleDescriptor = require('./lib/styleDescriptor')
+import {
+  transformStyle
+} from './lib/filter'
 
-const AST_TYPE = {
-  STYLESHEET: 'stylesheet',
-  RULE: 'rule',
-  DECLARATION: 'declaration',
-  FONT_FACE: 'font-face',
-  IMPORT: 'import',
-  KEYFRAME: 'keyframe'
+// var StyleDescriptor = require('./lib/styleDescriptor')
+import StyleDescriptor from './lib/styleDescriptor'
+
+declare type StyleDescriptorMap = {
+  [s: string]: StyleDescriptor
 }
 
-const REG_EXP = {
+const enum AST_TYPE {
+  STYLESHEET = 'stylesheet',
+  RULE = 'rule',
+  DECLARATION = 'declaration',
+  FONT_FACE = 'font-face',
+  IMPORT = 'import',
+  KEYFRAME = 'keyframe'
+}
+
+const REG_EXP: any = {
   CLASS: /^\./,
   SELECT_TYPE: /^[\.#]/,
   // [data-v-[hash]]
@@ -30,33 +39,33 @@ const REG_EXP = {
   KEY_VALUE: /^([a-zA-Z]+)=([a-zA-Z0-9]+)$/
 }
 
-module.exports = function (code) {
+module.exports = function (code:string) {
   _c.log('viola-style code', code)
 
   let cssAST = css.parse(code)
 
   _c.log('viola-style AST', cssAST)
-  
+
   // return res
   var testStyle = { violaStyle: "red" }
-  return 'module.exports = ' + JSON.stringify(walkAST(cssAST), {}, 2)
+  return 'module.exports = ' + JSON.stringify(walkAST(cssAST), null, 2)
 }
 
-function walkAST(cssAST) {
+function walkAST(cssAST: any): StyleDescriptorMap {
   if (!cssAST) return
   if (
     cssAST.type === AST_TYPE.STYLESHEET
-    && cssAST.stylesheet 
+    && cssAST.stylesheet
     && cssAST.stylesheet.rules
   ) {
     let sheet = cssAST.stylesheet // 样式表
     let rules = sheet.rules       // rule array
-    let styles = {}               // 收集样式
-    rules.forEach((rule) => {
+    let styles: StyleDescriptorMap  = {}               // 收集样式
+    rules.forEach((rule:any) => {
       let styleDescription = {}
       if (rule.type === AST_TYPE.RULE) {
         let declarations = rule.declarations
-        
+
         // selector 是选择器，rule.selectors 为数组
         let selector = Array.isArray(rule.selectors) ? rule.selectors[0] : rule.selectors
         let selectorName
@@ -79,13 +88,13 @@ function walkAST(cssAST) {
         let {
           className, scoped_id, attr, state, stateArr
         } = getSelectorData(selectorName)
-        
+
         _c.log('getSelectorData', {
           selectorName,
           className, scoped_id, attr, state, stateArr
         })
-        
-        let cur = styles[className] || (styles[className] = new StyleDescriptor()), target
+
+        let cur: StyleDescriptor = styles[className] || (styles[className] = new StyleDescriptor()), target
         cur.scoped_id = scoped_id
         if (cur && attr[0]) {
           let key = attr[0]
@@ -93,16 +102,17 @@ function walkAST(cssAST) {
           // target = attr[1]
           //   ? (cur[attr[0]] && cur[attr[0]][attr[1]]) || ((cur[attr[0]] = {}) && (cur[attr[0]][attr[1]] = {}))
           //   : cur[attr[0]] || (cur[attr[0]] = {})
-          target = attr[1] 
+          target = attr[1]
             ? (_targetAttr[attr[1]] || (_targetAttr[attr[1]] = {}))
             : _targetAttr
         } else {
           target = cur.style
         }
-        
-        declarations.reduce((result, style) => {
+
+        declarations.reduce((result: any, style: any) => {
+          let res = transformStyle(style)
           // todo: property , value filter(transform)
-          result[style.property + state] = style.value
+          result[res.property + state] = res.value
           return result
         }, target)
       }
@@ -111,14 +121,22 @@ function walkAST(cssAST) {
   }
 }
 
+declare type SelectorData = {
+  className: string,
+  scoped_id: string,
+  attr: Array<string>,
+  state: string,
+  stateArr: Array<string>,
+}
+
 /**
  * 返回选择器的信息
  * .p[attr=value][data-v-XXX]
  * @param {String} selector selector
  */
-function getSelectorData(selector) {
-  let selectorData = {
-    className: null,
+function getSelectorData(selector: String) {
+  let selectorData: SelectorData = {
+    className: '',
     scoped_id: '',
     attr: [],
     state: '',
@@ -146,7 +164,7 @@ function getSelectorData(selector) {
         selectorData.attr = attr.split('=')
         // isDef(selectorData.attr[2]) || (selectorData.attr[2] = true)
         // selectorData[attrKeyVaule[0]] = isDef(attrKeyVaule[1]) ? attrKeyVaule[1] : true
-      } 
+      }
     }
     if (matchResult[3]) {
       // state: ':hover:active'
@@ -158,32 +176,10 @@ function getSelectorData(selector) {
   return selectorData
 }
 
-function sliceScopedId(selector) {
+function sliceScopedId(selector: String): String {
   let id = ''
   return selector.replace(REG_EXP.SCOPE_ID_FIELD, (input, $1) => {
     id = $1
     return ''
   })
-  return {
-    selector, scoped_id: id
-  }
 }
-
-/* 
-
-viola style rule: {
-  className : {
-    scoped: 'data-v-hash'
-    style: { ...styles },
-    attrs: {
-      attr: { ...style }
-    },
-    state: {
-      hover: { ...style },
-      active: { ...style }
-    },
-    children: []
-  }
-}
-
-*/

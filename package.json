@@ -2,13 +2,17 @@
   "name": "viola-style-loader",
   "version": "1.0.0",
   "description": "load style",
-  "main": "index.js",
+  "main": "/dist/index.js",
   "scripts": {
+    "tsc": "tsc",
     "test": "test"
   },
   "author": "ronk zeng",
   "license": "ISC",
   "dependencies": {
     "css": "^2.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^10.5.0"
   }
 }
