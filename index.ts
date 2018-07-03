@@ -1,4 +1,4 @@
-var _c = require('consoler')
+// var _c = require('consoler')
 var css = require('css')
 
 import {
@@ -40,11 +40,11 @@ const REG_EXP: any = {
 }
 
 module.exports = function (code:string) {
-  _c.log('viola-style code', code)
+  // _c.log('viola-style code', code)
 
   let cssAST = css.parse(code)
 
-  _c.log('viola-style AST', cssAST)
+  // _c.log('viola-style AST', cssAST)
 
   // return res
   var testStyle = { violaStyle: "red" }
@@ -89,10 +89,10 @@ function walkAST(cssAST: any): StyleDescriptorMap {
           className, scoped_id, attr, state, stateArr
         } = getSelectorData(selectorName)
 
-        _c.log('getSelectorData', {
-          selectorName,
-          className, scoped_id, attr, state, stateArr
-        })
+        // _c.log('getSelectorData', {
+        //   selectorName,
+        //   className, scoped_id, attr, state, stateArr
+        // })
 
         let cur: StyleDescriptor = styles[className] || (styles[className] = new StyleDescriptor()), target
         cur.scoped_id = scoped_id
